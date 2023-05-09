@@ -5,7 +5,7 @@ import messaging from '@react-native-firebase/messaging';
 
 export default function App() {  
   const [notificationArray, setNotificationArray] = useState([]);
-
+  const [token, setToken] = useState([]);
 
   const requestUserPermission = async () => { 
     const authStatus = await messaging().requestPermission();
@@ -16,6 +16,7 @@ export default function App() {
     if (enabled) {
       console.log('Authorization status:', authStatus);
     }
+    return authStatus;
   } 
 
    
@@ -23,7 +24,7 @@ export default function App() {
     const getToken = async () => {
       const hasPermission = await requestUserPermission();
       const token = await messaging().getToken();
-        console.log('Token:', token); 
+        // console.log('Token:', token); 
       if (hasPermission) {
         const token = await messaging().getToken();
         console.log('Token:', token);
