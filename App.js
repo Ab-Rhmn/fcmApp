@@ -7,6 +7,7 @@ import * as Location from "expo-location"
 import { ref, set, update} from 'firebase/database';
 import {db} from './component/config';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { v4 as uuidv4 } from 'uuid';
 
 
 const windowWidth = Dimensions.get('window').width;
@@ -44,34 +45,49 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 })
 
 
-
-
-
 export default function App() {  
   const [notificationArray, setNotificationArray] = useState([]);
   const [token, setToken] = useState([]);
-// newwwwwwwwwwwww
+
   const [position, setPosition] = useState(null);
   const [isBackgroundUpdateRunning, setIsBackgroundUpdateRunning] = useState(false);
   const [isForegroundUpdateRunning, setIsForegroundUpdateRunning] = useState(false);
-  const [data, setData] = useState([]);
+  const [datas, setData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // const [counter, setCounter] = useState(211);
 
   const handleTilePress = (item) => {
     setSelectedItem(item);
     setModalVisible(true);
+    //for debugging, comment out
+    handleConsole();
   };
 
+  //comment this out 
+  const handleConsole = ()=> {
+    console.log("data",datas);
+  }
 
-// const storageHighScore =async(userId,score) =>{
-//   set( ref(db,'/am/'),{username:"userId",highscore:"score"}).then(()=>console.log("aaaaaaaa")).catch(err=>console.log);
-//   // update(ref(db, '/am/' + userId), { username: "userId", highscore: "score" })
-//   // .then(() => console.log("Data successfully updated!"))
-//   // .catch((error) => console.error("Error updating data: ", error));
-   
-// }
+  const updateData = (remoteMessage) => {
+    const {data,notification} =remoteMessage;
+    console.log(remoteMessage);
 
+    const newData = {
+      time: data.time,
+      picture:JSON.parse(data.picture),
+      notification: notification
+    };
+    
+    newData.picture.unshift(newData.notification.android.imageUrl);
+    const parsedData = {
+      ...newData,
+      id: uuidv4(), // Generating a unique identifier using uuidv4()
+    };
+    setData(prevArray => [ parsedData,...prevArray]);
+    console.log("data",JSON.stringify(datas));
+  }
 
 
   const toggleForegroundUpdate = () => {
@@ -91,16 +107,6 @@ export default function App() {
     }
     setIsBackgroundUpdateRunning(!isBackgroundUpdateRunning);
   }
-
-
-  // newwwwwwwwwwwwwww
-
-
-
-
-
-
-
 
   const requestUserPermission = async () => { 
     const authStatus = await messaging().requestPermission();
@@ -133,7 +139,11 @@ export default function App() {
     messaging().getInitialNotification().then(async (remoteMessage) => {
       if (remoteMessage) {
         console.log('Notification caused app to open from quit state:',remoteMessage.notification,);
-        setNotificationArray(prevArray => [...prevArray, remoteMessage]);
+        try {           
+          updateData(remoteMessage); 
+        } catch (error) {
+          console.log(error);
+        }
       }      
     });
 
@@ -143,20 +153,32 @@ export default function App() {
           'Notification caused app to open from background state:',
           remoteMessage.notification,
         );
-        setNotificationArray(prevArray => [...prevArray, remoteMessage]);
+        try {           
+          updateData(remoteMessage);         
+        } catch (error) {
+          console.log(error);
+        }
     });
 
     // Register background handler
     messaging().setBackgroundMessageHandler(async remoteMessage => {
         console.log('Message handled in the background!', remoteMessage);
-        setNotificationArray(prevArray => [...prevArray, remoteMessage]);
+        try {           
+          updateData(remoteMessage);        
+        } catch (error) {
+          console.log(error);
+        }
+          
     });
 
 
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      Alert.alert('A new FCM message arrived!', JSON.stringify(remoteMessage));
-      const { title, body } = remoteMessage.notification;
-      setNotificationArray(prevArray => [...prevArray,remoteMessage ]);
+      Alert.alert('A new FCM message arrived!', JSON.stringify(remoteMessage.notification.title));
+      try {     
+        updateData(remoteMessage);
+      } catch (error) {
+        console.log(error);
+      }
     });
 
 
@@ -165,32 +187,37 @@ export default function App() {
       if (foreground.granted) await Location.requestBackgroundPermissionsAsync()
     }
     requestPermissions()
-    fetchData();
+    // fetchData();
     return unsubscribe;
 
     
   },[])
-  const fetchData = async () => {
-    // Fetch data from API and update state
-    const response = await fetch('https://jsonplaceholder.typicode.com/todos/');
-    const json = await response.json();
-    // setData(json);
-    // Modify each object in the array
-  const modifiedData = json.map(item => {
-    return {
-      ...item,
-      images: ['https://img.freepik.com/premium-photo/blue-premium-business-sedan-car-sports-configuration-white-background-3d-rendering_101266-26564.jpg','https://storage.googleapis.com/checkingbucket1/ab/car.jpeg']
-    };
-  });
-  setData(modifiedData.slice(0, 10));
-  console.log("ghghk", json)
-  };
-  const renderItem = ({ item }) => (
-    <View>
-      <Text>{item.userId}</Text>
-      <Text>{item.title}</Text>
-    </View>
-  );
+
+  // from this to  delete. no needed
+        // const fetchData = async () => {
+        //   // Fetch data from API and update state
+        //   const response = await fetch('https://jsonplaceholder.typicode.com/todos/');
+        //   const json = await response.json();
+        //   // Modify each object in the array
+        // const modifiedData = json.map(item => {
+        //   return {
+        //     ...item,
+        //     images: ['https://totalgyan.com/wp-content/uploads/2017/12/White-2BPlate.jpeg','https://storage.googleapis.com/checkingbucket1/ab/car.jpeg']
+        //   };
+        // });
+        // setData(modifiedData.slice(0, 10));
+        // // console.log("ghghk", json)
+        // // console.log("dataaaaa", JSON.stringify(data))
+        // console.log("dd",modifiedData.slice(0, 10))
+        // };
+        // const renderItem = ({ item }) => (
+        //   <View>
+        //     <Text>{item.userId}</Text>
+        //     <Text>{item.title}</Text>
+            
+        //   </View>
+        // );
+  // this dlt
 
   // Start location tracking in foreground
   const startForegroundUpdate = async () => {
@@ -287,11 +314,18 @@ export default function App() {
      
 
 <FlatList
-        data={data}
+        data={datas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.tile} onPress={() => handleTilePress(item)}>
-            <Text style={styles.tileTitle}>{item.title}</Text>
+           <TouchableOpacity style={styles.tile} onPress={() => handleTilePress(item)}>
+            
+           <View style={styles.tileTextContainer}>
+            <Text style={styles.tileTitle}>Location : {item?.notification.title}</Text>
+            <Text style={styles.tileText}>Day and Time of Violation: {item?.time}</Text>
+            <Image source={{ uri: item?.notification.android.imageUrl }} style={styles.image} /> 
+          </View>
+
+            {/* <Text style={styles.tileText}>Time of Violation is: {item?.time}</Text> */}
             {/* <Button title="Delete" onPress={() => deleteItem(item.id)} /> */}
             <TouchableOpacity style={styles.deleteButton} onPress={() => handleTilePress(item)}>
               <Icon name="trash" size={24} color="red" onPress={() => deleteItem(item.id)} />
@@ -301,10 +335,13 @@ export default function App() {
       />
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modal}>
-          <Text style={styles.title}>{selectedItem?.title}</Text>
-          <Text style={styles.userId}>{selectedItem?.userId}</Text>
+          <View style={styles.tileTextContainer}>
+            <Text style={styles.tileTitle}>{selectedItem?.notification.title}</Text>
+            <Text style={styles.tileText}>Cause of Violation: {selectedItem?.notification.body}</Text>
+            <Text style={styles.tileText}>Day and Time of Violation : {selectedItem?.time}</Text>
+          </View>
           <FlatList
-          data={selectedItem?.images}
+          data={selectedItem?.picture}
           keyExtractor={(item, index) => index.toString()}
           // horizontal={true}
           renderItem={({ item }) => (
@@ -340,34 +377,11 @@ export default function App() {
     </View>
   )
 }
-// {notificationArray.map((notification, index) => (
-//   <Text key={index}>{JSON.stringify(notification)}</Text>
-// ))}
 
-//   return (
-//     <View style={styles.container}>
-//       {notificationArray.map((notification, index) => (
-//       <Text key={index}>{JSON.stringify(notification)}</Text>
-//     ))}
-//       {/* {notificationData && (<Text>{JSON.stringify(notificationData)}</Text>)} */}
-//       <Text>FCM EXAMPLE</Text>
-//       <StatusBar style="auto" />
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-// });
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#303030",
     alignItems: "center",
     justifyContent: "flex-start",
     paddingTop: 20,
@@ -379,9 +393,25 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     width: "100%",
   },
-  tile: {
+  modal: {
+    flex: 1,
     backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 20,
+  },
+  tileTextContainer: {
+    // flex: 1, // Added flex property
+    
+    backgroundColor: '#f2f2f2',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 5,
+  },
+  tile: {
+    // flex: 1, 
+    backgroundColor: "#FFF",
+    padding: 10,
     borderRadius: 10,
     shadowColor: "#000",
     shadowOffset: {
@@ -392,24 +422,29 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     marginBottom: 10,
+    width:"100%",
   },
   tileTitle: {
+    
     fontWeight: "bold",
     fontSize: 16,
     marginBottom: 5,
+    
+    
   },
   tileText: {
-    fontSize: 14,
+    fontWeight: "bold",
+    fontSize: 12,
     color: "#555",
   },
 
-  modal: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
+  // modal: {
+  //   flex: 1,
+  //   backgroundColor: "#fff",
+  //   alignItems: "center",
+  //   justifyContent: "center",
+  //   padding: 20,
+  // },
   imageTile: {
     width: windowWidth,
     height: windowHeight / 2,
@@ -439,28 +474,13 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
   },
+  image: {
+    width: "100%",
+    height: 80,
+    resizeMode: 'contain',
+    borderRadius: 25,
+    // marginRight: 10,
+  },
  
 });
  
-
-
-
-  // const requestUserPermission = async () => {
-  //   try {
-  //     const authStatus = await messaging().requestPermission();
-  //     const enabled =
-  //       authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-  //       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-  
-  //     if (enabled) {
-  //       console.log('Authorization status:', authStatus);
-  //       return true;
-  //     } else {
-  //       console.log('Authorization status:', authStatus);
-  //       return false;
-  //     }
-  //   } catch (error) {
-  //     console.log('Error requesting permission:', error);
-  //     return false;
-  //   }
-  // };
