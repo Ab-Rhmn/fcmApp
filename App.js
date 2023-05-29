@@ -401,8 +401,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   tileTextContainer: {
-    // flex: 1, // Added flex property
-    
     backgroundColor: '#f2f2f2',
     padding: 10,
     borderRadius: 5,
@@ -425,12 +423,9 @@ const styles = StyleSheet.create({
     width:"100%",
   },
   tileTitle: {
-    
     fontWeight: "bold",
     fontSize: 16,
-    marginBottom: 5,
-    
-    
+    marginBottom: 5,   
   },
   tileText: {
     fontWeight: "bold",
@@ -478,8 +473,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 80,
     resizeMode: 'contain',
-    borderRadius: 25,
-    // marginRight: 10,
+    borderRadius: 25
   },
  
 });
